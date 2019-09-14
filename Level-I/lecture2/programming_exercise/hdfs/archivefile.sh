@@ -1,4 +1,4 @@
-filename="mydatafile.dat"
+filename="data1.log"
 **write a command to gzip the file
 
 today_dt=`date +%Y%m%d`
@@ -21,4 +21,3 @@ fi
 
 #Ok, so now we are all set with initial checks. Lets push the file from local to HDFS
 **write a command to move file from Local file system to HDFS
-
