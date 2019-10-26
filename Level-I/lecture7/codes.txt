@@ -1,0 +1,7 @@
+create table movies (mvoieid int, title string, genre string) row format delimited fields terminated by ',';
+Query: create table movies (mvoieid int, title string, genre string) row format delimited fields terminated by ','
+
+
+create table movie_stats (movieID int,title string, avg_rating decimal(9,2), tag String, tag_cnt int) row format delimited fields terminated by ',';
+
+select m.movieid, m.title,avg(r.rating),t.tag,count(r.rating) as tag_ctn from movies m join ratings r on m.movieid = r.movieid join tags t on m.movieid = t.movieid group by m.movieid,m.title,t.tag;

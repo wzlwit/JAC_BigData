@@ -28,7 +28,7 @@ sc.textFile("/data/input/spark/datafile.log").map(lambda x: x.split('[')[1]).map
 Copy hive-site.xml file into spark configuration folder
 sudo cp /etc/hive/conf.dist/hive-site.xml /etc/spark/conf.dist/
 
-Read a table from Hive
+====Read a table from Hive====
 val df1 = sqlContext.sql("select * from tempdb.t1)
 //from hive table
 
@@ -57,3 +57,10 @@ val df = sqlContext.createDataFrame(rowRdd, schema)
 df.show()
 
 rdd1.map(x=>x.mkString(","))
+
+
+
+====PythonSpark Schema====
+import pyspark.sql.Row
+From pyspark.sql import row
+rdd2 = token.map(lambda x: Row(fname=x[0], lname=x[1], deptid=x[2]))
