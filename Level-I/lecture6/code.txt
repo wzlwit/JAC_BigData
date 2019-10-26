@@ -1,0 +1,59 @@
+spark-shell
+val myfile = sc.textFile("/data/spark/datafile.log")
+val rdd1 = myfile.map(x=>x.split('[')(1))
+val rdd2 = rdd1.map(x=>x.split(':')(0))
+val keyval = rdd2.map(x=>(x,1))
+val finalRdd = keyval.reduceByKey((temp_sum,next)=>temp_sum+next)
+finalRdd.collect
+
+finalOutput.saveAsTextFile("/data/output/spark/op1")
+
+1 line:
+sc.textFile("/data/spark/datafile.log").map(x=>((x.split('[')(1).split(':')(0)),1)).reduceByKey((temp_sum,next)=>temp_sum+next).collect
+
+
+pyspark:
+myfile = sc.textFile("/data/input/spark/datafile.log")
+rdd1 = myfile.map(lambda x: x.split('[')[1])
+rdd2 = rdd1.map(lambda x: x.split('[')[1])
+keyval = rdd2.map(lambda x: (x,1))
+finalOutput = keyval.reduceByKey( lambda temp_sum,next :temp_sum+next)
+finalOutput.take(1)
+
+sc.textFile("/data/input/spark/datafile.log").map(lambda x: x.split('[')[1]).map(lambda x: x.split('[')[1]).map(lambda x: (x,1)).reduceByKey( lambda temp_sum,next :temp_sum+next).take(1)
+
+
+====DataFrame====
+
+Copy hive-site.xml file into spark configuration folder
+sudo cp /etc/hive/conf.dist/hive-site.xml /etc/spark/conf.dist/
+
+Read a table from Hive
+val df1 = sqlContext.sql("select * from tempdb.t1)
+//from hive table
+
+====Convert an RDD into Dataframe======
+val emp = sc.textFile("/data/input/spark/employee.txt")
+val fields = emp.map(x=>x.split(","))
+case class Employee(fname:String, lname:String, id:Int)
+val mydf = fields.map(x=> Employee(x(0),x(1),x(2).toInt)).toDF()
+mydf.printSchema
+mydf.show()
+mydf.registerTempTable("emp_tbl")
+val df2 = sqlContext.sql("select * from emp_tbl where id=1")
+df2.show()
+val df3=df2.filter($"id"===1)
+df2.show()
+
+
+====Convert RDD into Dataframe using Schema==== (another way)
+
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{StructType, StructField, StringType,IntegerType};
+
+val schema = StructType(Seq(StructField("fname",StringType,true),StructField("lname",StringType,true), StructField("id",IntegerType,true)))
+val rowRdd = fields.map(x=>Row(x(0),x(1),x(2).toInt))
+val df = sqlContext.createDataFrame(rowRdd, schema)
+df.show()
+
+rdd1.map(x=>x.mkString(","))
