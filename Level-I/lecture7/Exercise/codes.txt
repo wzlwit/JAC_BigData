@@ -2,6 +2,15 @@ create table movies (mvoieid int, title string, genre string) row format delimit
 Query: create table movies (mvoieid int, title string, genre string) row format delimited fields terminated by ','
 
 
-create table movie_stats (movieID int,title string, avg_rating decimal(9,2), tag String, tag_cnt int) row format delimited fields terminated by ',';
+create table movie_stats (movieid int,title string, avg_rating decimal(9,2), tag String, tag_cnt int) row format delimited fields terminated by ',';
 
-select m.movieid, m.title,avg(r.rating),t.tag,count(r.rating) as tag_ctn from movies m join ratings r on m.movieid = r.movieid join tags t on m.movieid = t.movieid group by m.movieid,m.title,t.tag;
+-- select m.movieid, m.title,avg(r.rating),t.tag,count(r.rating) as tag_ctn from movies m join ratings r on m.movieid = r.movieid join tags t on m.movieid = t.movieid group by m.movieid,m.title,t.tag;
+
+select mr.movieid, mr.title, mr.avg_rating, t.tag, count(t.tag) 
+from (
+    select m.movieid, m.title, avg(r.rating) as avg_rating
+    from movies m join ratings r on m.movieid = r.movieid
+    group by m.movieid, m.title
+) AS mr join tags t on mr.movieid = t.movieid
+group by mr.movieid,mr.title, mr.avg_rating, t.tag;
+
