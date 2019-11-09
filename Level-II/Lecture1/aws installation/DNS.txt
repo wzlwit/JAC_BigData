@@ -1,0 +1,18 @@
+Namenode:
+ec2-3-15-138-214.us-east-2.compute.amazonaws.com
+
+Datanode1:
+ec2-18-220-44-229.us-east-2.compute.amazonaws.com
+
+Datanode2:
+ec2-3-19-227-42.us-east-2.compute.amazonaws.com
+
+Datanode3:
+ec2-3-15-24-235.us-east-2.compute.amazonaws.com
+
+
+/home/ubuntu/.ssh/id_rsa.pub:
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0hnUbvlWqblx/Dy/IoKjrmMVR3Cpok1GG2Gg2psfVq02CbT1eDJ8j0wwfRuPiGfRrFxCKi3icvVNoWNHSV7sMXMr6AcZ68x6aRI5WXx8eqLTjyok3T62LgDX6YXq673YDgOYYuXoThseT04TVi3/NBgsbNsoMLRZXKiQLpFF221dFZWJcVLv4pj2PM3bAWxyK4gOch/xIN3EWnfiHNlLYDychWbUU5AeCSK0bXlwHzNRUSPg/BpkeeJyruGz2Kph9oM8MIpHRKrglejc+TNsGNZMu2EfsJy4ly8gzXR1JmkJs0hi2q/zwetbiZO0iUOy/DfZh75g1HIQAgc2LuPsv ubuntu@ip-172-31-0-24
+
+directly connect through browser: (indicate the port)
+http://ec2-3-15-138-214.us-east-2.compute.amazonaws.com:50070

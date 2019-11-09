@@ -1,0 +1,11 @@
+create table rider(name string, age int, vehicle_conf struct<reg_no:string, top_speed:int, cc:int, brand:string>) row format delimited fields terminated by '|' collection items terminated by ',';
+insert into rider select ""Abdelali"", 27, named_struct(""reg_no"",""QC123"",""top_speed"",250,""cc"",600,""brand"",""YAMAHA"")
+select name, age, vehicle_conf.reg_no from rider;
+
+create table resultMap(student_id int, bands map<string,double>) row format delimited fields terminated by '|' collection items terminated by ',' map keys terminated by ':'
+select student_id, bands[""reading""] from resultmap;
+insert into resultMap select 10, map(""reading"",4.5,""listening"",7.5,""writing"",7.0)
+
+create table result(student_id int, bands array<double>) row format delimited fields terminated by '|' collection items terminated by ','
+insert into result select 10, array(4.5,6.7)
+select student_id, band[1] from result;
