@@ -1,0 +1,2 @@
+add jar /home/cloudera/Desktop/jar/agegroup.jar;
+create temporary function agegroup as 'udf.AgeGroup';

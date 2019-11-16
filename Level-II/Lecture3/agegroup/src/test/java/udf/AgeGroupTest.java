@@ -9,7 +9,7 @@ public class AgeGroupTest {
     @Test
     public void testUDF() {
         AgeGroup example = new AgeGroup();
-        Assert.assertEquals("Children", example.evaluate(new IntWritable(9)).toString());
+        Assert.assertEquals("Child", example.evaluate(new IntWritable(9)).toString());
     }
 
     @Test
