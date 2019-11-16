@@ -10,12 +10,13 @@ import org.apache.hadoop.hive.serde2.objectinspector.ObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.DoubleObjectInspector;
 import org.apache.hadoop.hive.serde2.objectinspector.primitive.PrimitiveObjectInspectorFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Description(
         name="IsAccepted",
         value="returns true for a given individual score list, min individual and average scores expected",
-        extended="SELECT isaccepted(List<Double>, Double, Double) from citizen;"
+        extended="SELECT isaccepted(ArrayList<Double>, Double, Double) from citizen;"
 )
 public class IsAccepted extends GenericUDF {
     ListObjectInspector individualBands;
@@ -63,7 +64,7 @@ public class IsAccepted extends GenericUDF {
 
         // get the list and string from the deferred objects using the object inspectors
 
-        List<Double> individualBandsList = (List<Double>) this.individualBands.getList(arguments[0].get());
+        ArrayList<Double> individualBandsList = (ArrayList<Double>) this.individualBands.getList(arguments[0].get());
         Double minIndividualScore = (Double) individualMinScore.getPrimitiveJavaObject(arguments[1].get());
         Double minAvgScore = (Double) avgMinScore.getPrimitiveJavaObject(arguments[2].get());
 
