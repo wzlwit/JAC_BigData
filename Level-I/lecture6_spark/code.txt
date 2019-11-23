@@ -33,6 +33,7 @@ val df1 = sqlContext.sql("select * from tempdb.t1)
 //from hive table
 
 ====Convert an RDD into Dataframe======
+===Case Class===
 val emp = sc.textFile("/data/input/spark/employee.txt")
 val fields = emp.map(x=>x.split(","))
 case class Employee(fname:String, lname:String, id:Int)
@@ -47,7 +48,7 @@ df2.show()
 
 
 ====Convert RDD into Dataframe using Schema==== (another way)
-
+===StructType===
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{StructType, StructField, StringType,IntegerType};
 
