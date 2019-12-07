@@ -56,7 +56,7 @@ case class ll(trans_seq:Int, trans_code:String,loyalty_card_no:String, store_num
 var llDf = llRdd.map(x=>ll(x(0).toInt, x(1), x(2), x(3), x(4).toInt, x(5).toInt, x(6))).toDF
 
 
-llDf.collect.foreach(x=>println(x(3)+("%04d".format(x(4)))))
+-- llDf.collect.foreach(x=>println(x(3)+("%04d".format(x(4)))))
 
 -- Transaction ID = 'daydate-yyyymmdd' + 'store_id' + 'lane' + 'Trans_Seq'
 
@@ -67,17 +67,18 @@ def getTransID(_c1:String, _c2:Int, _c3:Int, _c4:Int): Long = {
     val c4 = "%04d".format(_c4)
     (c1 + c2 + c3 + c4).toLong
 }
+var transId = getTransID(_,_,_,_)
+var getTxID = sqlContext.udf.register("getTxID", transId)
+
+-- !!! there is some problem in the following UDF
 def getTransID(_c1:String, _c2:Int, _c3:Int, _c4:Int): Long = {
-    val c1 = _c1.subString(10).replaceAll("-","").toInt
+    val c1 = _c1.substring(10).replaceAll("-","").toInt
     val c2 = "%05d".format(_c2)
     val c3 = "%02d".format(_c3)
     val c4 = "%04d".format(_c4)
     (c1 + c2 + c3 + c4).toLong
 }
-
-
 var transId = getTransID(_,_,_,_)
-
 var getTxID = sqlContext.udf.register("getTxID", transId)
 
 -- df.select(tid(df("c1"), df("c2")))
@@ -90,17 +91,29 @@ val stDf = sqlContext.sql("select * from staging.store")
 var tsDf = ttDf.join(stDf, "store_num")
 ttDf.join(stDf, ttDf("store_num") === stDf("store_num"))
 
+-- tsDf.select(getTxID(col("timestamp"),col("store_id"),col("lane"),col("trans_seq"))).show()
 
 -- register temporary table
 ttDf.registerTempTable("ttTemp")
 llDf.registerTempTable("llTemp")
 ppDf.registerTempTable("ppTemp")
 
+
+-- better way  to use temporary table to delete first/last record accordingly, by join
+-- * \ to escape
+sqlContext.sql("select *, row_number() over (partition by Trans_Seq,Product_code order by scan_seq) as RowNum from ttTemp where add_remove_flag = 1").registerTempTable("ttTempPlus")
+
+sqlContext.sql("select *, row_number() over (partition by Trans_Seq,Product_code order by scan_seq) as RowNum from ttTemp where add_remove_flag = -1").registerTempTable("ttTempMinus")
+
+var ttDf_clean = sqlContext.sql("select p.* from ttTempPlus p left join ttTempMinus m on m.trans_seq = p.trans_seq and m.product_code = p.product_code and m.RowNum=p.RowNum where m.add_remove_flag is null")
+
+ttDf_clean.registerTempTable("ttTemp")
+
 -- tt
     -- by group, using 'Discount' column
-var tt = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, store_id, product_id, POS_emp_num as Emp_Id,discount as Discount_Amt, sum(amount*add_remove_flag) as Qty from ttTemp t join staging.store s on t.store_num = s.store_num JOIN staging.product p on t.product_code = p.product_code group by getTxID(timestamp,store_id,lane,trans_seq), store_id, product_id, POS_emp_num,discount having sum(amount*add_remove_flag)>0")
+-- var tt = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, store_id, product_id, POS_emp_num as Emp_Id,discount as Discount_Amt, sum(amount*add_remove_flag) as Qty from ttTemp t join staging.store s on t.store_num = s.store_num JOIN staging.product p on t.product_code = p.product_code group by getTxID(timestamp,store_id,lane,trans_seq), store_id, product_id, POS_emp_num,discount having sum(amount*add_remove_flag)>0")
 
-    -- no group
+var tt = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, store_id, product_id, POS_emp_num as Emp_Id,discount as Discount_Amt, amount as Qty, substr(timestamp,0,10) as tx_date from ttTemp t join staging.store s on t.store_num = s.store_num JOIN staging.product p on t.product_code = p.product_code")
 
 
 var pp = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, Promo_Code_Id from ppTemp t join staging.store s on t.store_num = s.store_num JOIN staging.promotion p on t.promotion_code = p.promo_code")
@@ -108,13 +121,32 @@ var pp = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx
 
 var ll = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, Loyalty_member_num from llTemp t join staging.store s on t.store_num = s.store_num JOIN staging.loyalty l on t.loyalty_card_no = l.card_no")
 
-var finalDf= tt.join(pp, tt("Tx_id")=== pp("Tx_id"),"left_outer").join(ll,tt("Tx_id")===ll("Tx_id"),"left_outer")
 
--- or
+-- transfer to format of target table
 var j1= tt.join(pp, tt("Tx_id")=== pp("Tx_id"),"left_outer")
 var j2 = j1.join(ll,tt("Tx_id")===ll("Tx_id"),"left_outer")
-var finalDf = j2.select(tt("Tx_id"),col("store_id"),col("Product_id"),ll("Loyalty_Member_Num"),col("promo_code_id"),col("Emp_Id"),col("Discount_Amt"),col("Qty"))
-finalDf.show()
--- better to use temporary table to join
+var finalDf = j2.select(tt("Tx_id"),col("store_id"),col("Product_id"),ll("Loyalty_Member_Num"),col("promo_code_id"),col("Emp_Id"),col("Discount_Amt"),col("Qty"),col("tx_date"))
+finalDf.registerTempTable("finalTemp")
+sqlContext.sql("use staging")
 
-tsDf.select(getTxID(col("timestamp"),col("store_id"),col("lane"),col("trans_seq"))).show()
+
+finalDf.show()
+sqlContext.sql("select * from finalTemp").show()
+
+sqlContext.sql("set hive.exec.dynamic.partition.mode=nonstrict")
+sqlContext.sql("insert into target_table partition(tx_date) select * from finalTemp")
+sqlContext.sql("Select * from staging.target_table").show()
+
+
+/* OPTIONS */
+var finalDf= tt.join(pp, tt("Tx_id")=== pp("Tx_id"),"left_outer").join(ll,tt("Tx_id")===ll("Tx_id"),"left_outer")
+
+
+
+
+
+
+
+
+
+
