@@ -36,24 +36,24 @@ hdfs dfs -put data/miniProject/promotions.csv /data/input/stagin/promotion
 "%05d".format(12)
 
 -- * Spark
-val input = sc.textFile("/data/input/miniProject/trans_log.csv")
-val fields = input.map(x=>x.split(","))
-val ttRdd = fields.filter(x=>x(1)=="TT")
-val llRdd = fields.filter(x=>x(1)=="LL")
-val ppRdd = fields.filter(x=>x(1)=="PP")
+var input = sc.textFile("/data/input/miniProject/trans_log.csv")
+var fields = input.map(x=>x.split(","))
+var ttRdd = fields.filter(x=>x(1)=="TT")
+var llRdd = fields.filter(x=>x(1)=="LL")
+var ppRdd = fields.filter(x=>x(1)=="PP")
 
 
 case class tt(Trans_Seq:Int, Trans_code:String, scan_seq:Int, Product_code:String, amount:Double, discount:Double, add_remove_flag:Int, store_num:String, POS_emp_num:Int, lane:Int, timestamp:String)
 
-var ttDf = ttRdd.map(x=>tt(x(0).toInt, x(1), x(2).toInt, x(3), x(4).toDouble, x(5).toDouble, x(6).toInt, x(7), x(8).toInt, x(9).toInt, x(10))).toDF
+var ttDf = ttRdd.map(x=>tt(x(0).toInt, x(1), x(2).toInt, x(3), x(4).toDouble, x(5).toDouble, x(6).toInt, x(7), x(8).toInt, x(9).toInt, x(10))).toDf
 
 case class pp(trans_seq:Int, trans_code:String,promotion_code:String, store_num:String, pos_emp_num:Int, lane:Int, timestamp:String)
 
-var ppDf = ppRdd.map(x=>pp(x(0).toInt, x(1), x(2), x(3), x(4).toInt, x(5).toInt, x(6))).toDF
+var ppDf = ppRdd.map(x=>pp(x(0).toInt, x(1), x(2), x(3), x(4).toInt, x(5).toInt, x(6))).toDf
 
 case class ll(trans_seq:Int, trans_code:String,loyalty_card_no:String, store_num:String, pos_emp_num:Int, lane:Int, timestamp:String)
 
-var llDf = llRdd.map(x=>ll(x(0).toInt, x(1), x(2), x(3), x(4).toInt, x(5).toInt, x(6))).toDF
+var llDf = llRdd.map(x=>ll(x(0).toInt, x(1), x(2), x(3), x(4).toInt, x(5).toInt, x(6))).toDf
 
 
 -- llDf.collect.foreach(x=>println(x(3)+("%04d".format(x(4)))))
@@ -113,19 +113,18 @@ ttDf_clean.registerTempTable("ttTemp")
     -- by group, using 'Discount' column
 -- var tt = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, store_id, product_id, POS_emp_num as Emp_Id,discount as Discount_Amt, sum(amount*add_remove_flag) as Qty from ttTemp t join staging.store s on t.store_num = s.store_num JOIN staging.product p on t.product_code = p.product_code group by getTxID(timestamp,store_id,lane,trans_seq), store_id, product_id, POS_emp_num,discount having sum(amount*add_remove_flag)>0")
 
-var tt = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, store_id, product_id, POS_emp_num as Emp_Id,discount as Discount_Amt, amount as Qty, substr(timestamp,0,10) as tx_date from ttTemp t join staging.store s on t.store_num = s.store_num JOIN staging.product p on t.product_code = p.product_code")
+var tt_tb = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, store_id, product_id, POS_emp_num as Emp_Id,discount as Discount_Amt, amount as Qty, substr(timestamp,0,10) as tx_date from ttTemp t join staging.store s on t.store_num = s.store_num JOIN staging.product p on t.product_code = p.product_code")
 
 
-var pp = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, Promo_Code_Id from ppTemp t join staging.store s on t.store_num = s.store_num JOIN staging.promotion p on t.promotion_code = p.promo_code")
+var pp_tb = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, Promo_Code_Id from ppTemp t join staging.store s on t.store_num = s.store_num JOIN staging.promotion p on t.promotion_code = p.promo_code")
 
 
-var ll = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, Loyalty_member_num from llTemp t join staging.store s on t.store_num = s.store_num JOIN staging.loyalty l on t.loyalty_card_no = l.card_no")
+var ll_tb = sqlContext.sql("select getTxID(timestamp,store_id,lane,trans_seq) as Tx_Id, Loyalty_member_num from llTemp t join staging.store s on t.store_num = s.store_num JOIN staging.loyalty l on t.loyalty_card_no = l.card_no")
 
 
--- transfer to format of target table
-var j1= tt.join(pp, tt("Tx_id")=== pp("Tx_id"),"left_outer")
-var j2 = j1.join(ll,tt("Tx_id")===ll("Tx_id"),"left_outer")
-var finalDf = j2.select(tt("Tx_id"),col("store_id"),col("Product_id"),ll("Loyalty_Member_Num"),col("promo_code_id"),col("Emp_Id"),col("Discount_Amt"),col("Qty"),col("tx_date"))
+var j1= tt_tb.join(pp_tb, tt_tb("Tx_id")=== pp_tb("Tx_id"),"left_outer")
+var j2 = j1.join(ll_tb,tt_tb("Tx_id")===ll_tb("Tx_id"),"left_outer")
+var finalDf = j2.select(tt_tb("Tx_id"),j1("store_id"),j1("Product_id"),ll_tb("Loyalty_Member_Num"),j1("promo_code_id"),j1("Emp_Id"),j1("Discount_Amt"),j1("Qty"),j1("tx_date"))
 finalDf.registerTempTable("finalTemp")
 sqlContext.sql("use staging")
 
@@ -139,7 +138,7 @@ sqlContext.sql("Select * from staging.target_table").show()
 
 
 /* OPTIONS */
-var finalDf= tt.join(pp, tt("Tx_id")=== pp("Tx_id"),"left_outer").join(ll,tt("Tx_id")===ll("Tx_id"),"left_outer")
+var finalDf= tt_tb.join(pp_tb, tt_tb("Tx_id")=== pp_tb("Tx_id"),"left_outer").join(ll_tb,tt_tb("Tx_id")===ll_tb("Tx_id"),"left_outer")
 
 
 
