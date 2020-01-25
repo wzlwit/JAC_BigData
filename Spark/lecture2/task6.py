@@ -16,7 +16,7 @@ vector_df = combined.select(combined.features)
 
 #Let the algorithm figure out different clusters
 from pyspark.ml.clustering import KMeans
-kmeans = KMeans().setK(3)
+kmeans = KMeans().setK(3)   # how many groups/clustor expected
 model = kmeans.fit(vector_df)
 
 #Predict
